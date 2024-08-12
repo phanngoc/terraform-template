@@ -1,0 +1,47 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+  pre_build:
+    commands:
+      - echo File Output From SSM ....
+      - "aws configure set region $AWS_DEFAULT_REGION"
+      - echo Logging in to Amazon ECR....
+      - echo $AWS_DEFAULT_REGION
+      #ECRにログイン
+      - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+      - REPO_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_NAME
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image of crm...
+      #Dockerイメージのビルド（crm）
+      - docker build -t $IMAGE_NAME ./app
+      - docker tag $IMAGE_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_NAME
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image of crm...
+      #DockerイメージのECRへのプッシュ（crm）
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_NAME
+      - printf '{"ImageURI":"%s"}' $REPO_URI:latest > imageDetail.json
+      - " cat ./app/appspec.yaml > appspec.yaml "
+      - " cat ./app/buildspec.yml > buildspec.yml "
+      - " cat ./app/taskdef.json > taskdef.json "
+
+artifacts:
+  files:
+    - appspec.yaml
+    - buildspec.yml
+    - imageDetail.json
+    - taskdef.json
+  secondary-artifacts:
+    BuildOut:
+      files:
+        - imageDetail.json
+        - appspec.yaml
+        - taskdef.json

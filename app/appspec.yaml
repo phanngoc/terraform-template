@@ -1,0 +1,10 @@
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        PlatformVersion: "1.4.0"
+        TaskDefinition: "arn:aws:ecs:us-east-2:395044016922:task-definition/task_definition_name:46" 
+        LoadBalancerInfo:
+          ContainerName: "webapp"
+          ContainerPort: "3000"
